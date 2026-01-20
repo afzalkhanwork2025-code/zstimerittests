@@ -4,10 +4,13 @@ import { calculateScore, getProficiencyLabel, generateQuestionsForUser } from "@
 import { BookOpen, CheckCircle2, XCircle, RotateCcw, Trophy, Target, TrendingUp, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import type { Question } from "@/lib/questionGenerator";
+
 interface ResultsPageProps {
   username: string;
   answers: Record<string, number>;
   onRestart: () => void;
+  customQuestions?: Question[];
 }
 
 const levelLabels: Record<string, string> = {
@@ -17,12 +20,13 @@ const levelLabels: Record<string, string> = {
   'upper-advanced': 'Upper-Advanced'
 };
 
-export function ResultsPage({ username, answers, onRestart }: ResultsPageProps) {
-  const questions = useMemo(() => generateQuestionsForUser(username), [username]);
+export function ResultsPage({ username, answers, onRestart, customQuestions }: ResultsPageProps) {
+  const questions = useMemo(() => customQuestions || generateQuestionsForUser(username), [username, customQuestions]);
   const results = useMemo(() => calculateScore(questions, answers), [questions, answers]);
   const proficiency = useMemo(() => getProficiencyLabel(results.total), [results.total]);
 
-  const percentage = Math.round((results.total / 40) * 100);
+  const totalQuestions = questions.length;
+  const percentage = Math.round((results.total / totalQuestions) * 100);
 
   const proficiencyColors = {
     basic: 'from-neutral-400 to-neutral-500',
@@ -77,7 +81,7 @@ export function ResultsPage({ username, answers, onRestart }: ResultsPageProps) 
                 )}>
                   <div className="text-center">
                     <div className="text-4xl font-bold text-white">{results.total}</div>
-                    <div className="text-sm text-white/80">/40</div>
+                    <div className="text-sm text-white/80">/{totalQuestions}</div>
                   </div>
                 </div>
               </div>
@@ -101,7 +105,7 @@ export function ResultsPage({ username, answers, onRestart }: ResultsPageProps) 
                   </div>
                   <div className="flex items-center gap-1 text-destructive">
                     <XCircle className="w-4 h-4" />
-                    <span>{40 - results.total} incorrect</span>
+                    <span>{totalQuestions - results.total} incorrect</span>
                   </div>
                 </div>
               </div>
