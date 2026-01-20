@@ -1,13 +1,17 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { BookOpen, Brain, Target, Trophy } from "lucide-react";
+import { BookOpen, Brain, Target, Trophy, CheckCircle } from "lucide-react";
+import { ImportQuestionsDialog } from "./ImportQuestionsDialog";
+import type { Question } from "@/lib/questionGenerator";
 
 interface LandingPageProps {
   onStart: (username: string) => void;
+  onImportQuestions?: (questions: Question[]) => void;
+  importedCount?: number;
 }
 
-export function LandingPage({ onStart }: LandingPageProps) {
+export function LandingPage({ onStart, onImportQuestions, importedCount = 0 }: LandingPageProps) {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
 
@@ -27,7 +31,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
   };
 
   const features = [
-    { icon: BookOpen, title: "40 Questions", description: "Comprehensive assessment across 4 levels" },
+    { icon: BookOpen, title: importedCount > 0 ? `${importedCount} Questions` : "40 Questions", description: importedCount > 0 ? "Custom imported assessment" : "Comprehensive assessment across 4 levels" },
     { icon: Brain, title: "Adaptive Difficulty", description: "From basic to upper-advanced" },
     { icon: Target, title: "Personalized", description: "Unique questions based on your name" },
     { icon: Trophy, title: "Detailed Results", description: "See your strengths and areas to improve" },
@@ -93,6 +97,29 @@ export function LandingPage({ onStart }: LandingPageProps) {
                 Start Assessment
               </Button>
             </form>
+
+            {/* Import section */}
+            {onImportQuestions && (
+              <div className="mt-6 pt-6 border-t border-border/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-sm font-medium text-foreground">Custom Questions</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Import from URL or document
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {importedCount > 0 && (
+                      <span className="flex items-center gap-1 text-xs text-primary">
+                        <CheckCircle className="w-3 h-3" />
+                        {importedCount} imported
+                      </span>
+                    )}
+                    <ImportQuestionsDialog onImport={onImportQuestions} />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Features grid */}

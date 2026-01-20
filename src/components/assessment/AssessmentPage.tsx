@@ -9,6 +9,7 @@ import { ArrowRight, BookOpen } from "lucide-react";
 interface AssessmentPageProps {
   username: string;
   onComplete: (answers: Record<string, number>) => void;
+  customQuestions?: Question[];
 }
 
 const levels: Array<'basic' | 'intermediate' | 'advanced' | 'upper-advanced'> = [
@@ -29,18 +30,27 @@ const levelDescriptions: Record<string, string> = {
   'upper-advanced': 'Nuanced grammar, rare constructions, and academic English'
 };
 
-export function AssessmentPage({ username, onComplete }: AssessmentPageProps) {
+export function AssessmentPage({ username, onComplete, customQuestions }: AssessmentPageProps) {
   const [currentLevel, setCurrentLevel] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [showLevelIntro, setShowLevelIntro] = useState(true);
+  const [showLevelIntro, setShowLevelIntro] = useState(!customQuestions);
 
-  const allQuestions = useMemo(() => generateQuestionsForUser(username), [username]);
-  
-  const currentLevelQuestions = useMemo(() => 
-    getQuestionsForLevel(allQuestions, levels[currentLevel]),
-    [allQuestions, currentLevel]
+  // Use custom questions if provided, otherwise generate default questions
+  const allQuestions = useMemo(() => 
+    customQuestions || generateQuestionsForUser(username), 
+    [username, customQuestions]
   );
+
+  // For custom questions, show all at once; otherwise use level-based grouping
+  const isCustomMode = !!customQuestions;
+  
+  const currentLevelQuestions = useMemo(() => {
+    if (isCustomMode) {
+      return allQuestions;
+    }
+    return getQuestionsForLevel(allQuestions, levels[currentLevel]);
+  }, [allQuestions, currentLevel, isCustomMode]);
 
   const currentQuestion = currentLevelQuestions[currentQuestionIndex];
 
@@ -54,7 +64,7 @@ export function AssessmentPage({ username, onComplete }: AssessmentPageProps) {
   const handleNext = () => {
     if (currentQuestionIndex < currentLevelQuestions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
-    } else if (currentLevel < levels.length - 1) {
+    } else if (!isCustomMode && currentLevel < levels.length - 1) {
       setCurrentLevel(prev => prev + 1);
       setCurrentQuestionIndex(0);
       setShowLevelIntro(true);
@@ -65,7 +75,9 @@ export function AssessmentPage({ username, onComplete }: AssessmentPageProps) {
   };
 
   const isAnswered = currentQuestion && answers[currentQuestion.id] !== undefined;
-  const isLastQuestion = currentLevel === levels.length - 1 && currentQuestionIndex === currentLevelQuestions.length - 1;
+  const isLastQuestion = isCustomMode 
+    ? currentQuestionIndex === currentLevelQuestions.length - 1
+    : currentLevel === levels.length - 1 && currentQuestionIndex === currentLevelQuestions.length - 1;
 
   if (showLevelIntro) {
     const level = levels[currentLevel];
