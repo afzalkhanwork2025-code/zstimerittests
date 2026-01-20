@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { BookOpen, Brain, Target, Trophy, CheckCircle } from "lucide-react";
+import { BookOpen, Brain, Target, Trophy, CheckCircle, Loader2 } from "lucide-react";
 import { ImportQuestionsDialog } from "./ImportQuestionsDialog";
 import type { Question } from "@/lib/questionGenerator";
 
@@ -9,9 +9,10 @@ interface LandingPageProps {
   onStart: (username: string) => void;
   onImportQuestions?: (questions: Question[]) => void;
   importedCount?: number;
+  isLoading?: boolean;
 }
 
-export function LandingPage({ onStart, onImportQuestions, importedCount = 0 }: LandingPageProps) {
+export function LandingPage({ onStart, onImportQuestions, importedCount = 0, isLoading = false }: LandingPageProps) {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
 
@@ -105,16 +106,21 @@ export function LandingPage({ onStart, onImportQuestions, importedCount = 0 }: L
                   <div className="flex-1">
                     <h3 className="text-sm font-medium text-foreground">Custom Questions</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Import from URL or document
+                      {importedCount > 0 ? "Saved as default for all users" : "Import from URL or document"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {importedCount > 0 && (
+                    {isLoading ? (
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Loading...
+                      </span>
+                    ) : importedCount > 0 ? (
                       <span className="flex items-center gap-1 text-xs text-primary">
                         <CheckCircle className="w-3 h-3" />
-                        {importedCount} imported
+                        {importedCount} saved
                       </span>
-                    )}
+                    ) : null}
                     <ImportQuestionsDialog onImport={onImportQuestions} />
                   </div>
                 </div>

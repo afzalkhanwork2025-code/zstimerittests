@@ -14,7 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      assessment_settings: {
+        Row: {
+          id: string
+          updated_at: string
+          use_custom_questions: boolean | null
+        }
+        Insert: {
+          id?: string
+          updated_at?: string
+          use_custom_questions?: boolean | null
+        }
+        Update: {
+          id?: string
+          updated_at?: string
+          use_custom_questions?: boolean | null
+        }
+        Relationships: []
+      }
+      questions: {
+        Row: {
+          correct_answer: number
+          created_at: string
+          difficulty: string | null
+          explanation: string | null
+          id: string
+          is_active: boolean | null
+          options: Json
+          question: string
+        }
+        Insert: {
+          correct_answer: number
+          created_at?: string
+          difficulty?: string | null
+          explanation?: string | null
+          id?: string
+          is_active?: boolean | null
+          options: Json
+          question: string
+        }
+        Update: {
+          correct_answer?: number
+          created_at?: string
+          difficulty?: string | null
+          explanation?: string | null
+          id?: string
+          is_active?: boolean | null
+          options?: Json
+          question?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
