@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { questions, replaceExisting = true } = await req.json();
+    const { questions, replaceExisting = true, testType = 'english' } = await req.json();
     
     if (!questions || !Array.isArray(questions) || questions.length === 0) {
       return new Response(
@@ -36,14 +36,15 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log(`Saving ${questions.length} questions to database...`);
+    console.log(`Saving ${questions.length} ${testType} questions to database...`);
 
-    // If replacing, deactivate all existing questions
+    // If replacing, deactivate all existing questions for this test type
     if (replaceExisting) {
       const { error: deactivateError } = await supabase
         .from('questions')
         .update({ is_active: false })
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .eq('test_type', testType);
 
       if (deactivateError) {
         console.error('Error deactivating existing questions:', deactivateError);
@@ -59,6 +60,7 @@ Deno.serve(async (req) => {
       explanation: q.explanation || '',
       difficulty: q.level || 'intermediate',
       is_active: true,
+      test_type: testType,
     }));
 
     const { data: insertedQuestions, error: insertError } = await supabase
@@ -71,24 +73,41 @@ Deno.serve(async (req) => {
       throw new Error('Failed to save questions');
     }
 
-    // Update settings to use custom questions
-    const { error: settingsError } = await supabase
+    // Check if settings exist for this test type
+    const { data: existingSettings } = await supabase
       .from('assessment_settings')
-      .update({ use_custom_questions: true, updated_at: new Date().toISOString() })
-      .eq('id', (await supabase.from('assessment_settings').select('id').limit(1).single()).data?.id);
+      .select('id')
+      .eq('test_type', testType)
+      .maybeSingle();
 
-    if (settingsError) {
-      console.error('Error updating settings:', settingsError);
-      // Non-fatal, continue
+    if (existingSettings) {
+      // Update existing settings
+      const { error: settingsError } = await supabase
+        .from('assessment_settings')
+        .update({ use_custom_questions: true, updated_at: new Date().toISOString() })
+        .eq('id', existingSettings.id);
+
+      if (settingsError) {
+        console.error('Error updating settings:', settingsError);
+      }
+    } else {
+      // Insert new settings for this test type
+      const { error: insertSettingsError } = await supabase
+        .from('assessment_settings')
+        .insert({ test_type: testType, use_custom_questions: true });
+
+      if (insertSettingsError) {
+        console.error('Error inserting settings:', insertSettingsError);
+      }
     }
 
-    console.log(`Successfully saved ${insertedQuestions?.length} questions`);
+    console.log(`Successfully saved ${insertedQuestions?.length} ${testType} questions`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         savedCount: insertedQuestions?.length || 0,
-        message: `${insertedQuestions?.length} questions saved as default for all users`
+        message: `${insertedQuestions?.length} ${testType} questions saved as default for all users`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
