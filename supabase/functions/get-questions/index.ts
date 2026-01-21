@@ -18,22 +18,11 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    // Get test type from request body
-    let testType = 'english';
-    try {
-      const body = await req.json();
-      testType = body.testType || 'english';
-    } catch {
-      // No body or invalid JSON, use default
-    }
-
-    console.log(`Fetching questions for test type: ${testType}`);
-
-    // Check if custom questions are enabled for this test type
+    // Check if custom questions are enabled
     const { data: settings } = await supabase
       .from('assessment_settings')
       .select('use_custom_questions')
-      .eq('test_type', testType)
+      .limit(1)
       .maybeSingle();
 
     if (!settings?.use_custom_questions) {
@@ -42,18 +31,17 @@ Deno.serve(async (req) => {
           success: true, 
           useCustomQuestions: false,
           questions: [],
-          message: `Using default question bank for ${testType}`
+          message: 'Using default question bank'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Fetch active questions for this test type
+    // Fetch active questions
     const { data: questions, error } = await supabase
       .from('questions')
       .select('*')
       .eq('is_active', true)
-      .eq('test_type', testType)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -67,14 +55,14 @@ Deno.serve(async (req) => {
           success: true, 
           useCustomQuestions: false,
           questions: [],
-          message: `No custom questions found for ${testType}, using default`
+          message: 'No custom questions found, using default'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Transform to expected format
-    const formattedQuestions = questions.map((q) => ({
+    const formattedQuestions = questions.map((q, index) => ({
       id: `custom_${q.id}`,
       question: q.question,
       options: q.options as [string, string, string],
@@ -83,7 +71,7 @@ Deno.serve(async (req) => {
       level: (q.difficulty || 'intermediate') as 'basic' | 'intermediate' | 'advanced' | 'upper-advanced',
     }));
 
-    console.log(`Returning ${formattedQuestions.length} custom questions for ${testType}`);
+    console.log(`Returning ${formattedQuestions.length} custom questions`);
 
     return new Response(
       JSON.stringify({ 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { LandingPage, TestType } from "@/components/assessment/LandingPage";
+import { LandingPage } from "@/components/assessment/LandingPage";
 import { AssessmentPage } from "@/components/assessment/AssessmentPage";
 import { ResultsPage } from "@/components/assessment/ResultsPage";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,43 +7,28 @@ import type { Question } from "@/lib/questionGenerator";
 
 type AppState = 
   | { stage: 'landing' }
-  | { stage: 'assessment'; username: string; testType: TestType; customQuestions?: Question[] }
-  | { stage: 'results'; username: string; testType: TestType; answers: Record<string, number>; customQuestions?: Question[] };
+  | { stage: 'assessment'; username: string; customQuestions?: Question[] }
+  | { stage: 'results'; username: string; answers: Record<string, number>; customQuestions?: Question[] };
 
 const Index = () => {
   const [state, setState] = useState<AppState>({ stage: 'landing' });
-  const [importedQuestions, setImportedQuestions] = useState<{ english: Question[]; interview: Question[] }>({
-    english: [],
-    interview: [],
-  });
+  const [importedQuestions, setImportedQuestions] = useState<Question[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
 
   // Load saved questions on mount
   useEffect(() => {
     const loadSavedQuestions = async () => {
       try {
-        // Load English questions
-        const { data: englishData, error: englishError } = await supabase.functions.invoke('get-questions', {
-          body: { testType: 'english' }
-        });
+        const { data, error } = await supabase.functions.invoke('get-questions');
         
-        if (englishError) {
-          console.error('Error loading English questions:', englishError);
-        } else if (englishData?.success && englishData?.useCustomQuestions && englishData?.questions?.length > 0) {
-          console.log(`Loaded ${englishData.questions.length} saved English questions`);
-          setImportedQuestions(prev => ({ ...prev, english: englishData.questions }));
+        if (error) {
+          console.error('Error loading saved questions:', error);
+          return;
         }
 
-        // Load Interview questions
-        const { data: interviewData, error: interviewError } = await supabase.functions.invoke('get-questions', {
-          body: { testType: 'interview' }
-        });
-        
-        if (interviewError) {
-          console.error('Error loading Interview questions:', interviewError);
-        } else if (interviewData?.success && interviewData?.useCustomQuestions && interviewData?.questions?.length > 0) {
-          console.log(`Loaded ${interviewData.questions.length} saved Interview questions`);
-          setImportedQuestions(prev => ({ ...prev, interview: interviewData.questions }));
+        if (data?.success && data?.useCustomQuestions && data?.questions?.length > 0) {
+          console.log(`Loaded ${data.questions.length} saved questions`);
+          setImportedQuestions(data.questions);
         }
       } catch (err) {
         console.error('Failed to load saved questions:', err);
@@ -55,32 +40,30 @@ const Index = () => {
     loadSavedQuestions();
   }, []);
 
-  const handleImportQuestions = async (questions: Question[], testType: TestType) => {
-    setImportedQuestions(prev => ({ ...prev, [testType]: questions }));
+  const handleImportQuestions = async (questions: Question[]) => {
+    setImportedQuestions(questions);
     
     // Save questions to database
     try {
       const { data, error } = await supabase.functions.invoke('save-questions', {
-        body: { questions, replaceExisting: true, testType }
+        body: { questions, replaceExisting: true }
       });
       
       if (error) {
         console.error('Error saving questions:', error);
       } else {
-        console.log(`Saved ${data?.savedCount} ${testType} questions as default`);
+        console.log(`Saved ${data?.savedCount} questions as default`);
       }
     } catch (err) {
       console.error('Failed to save questions:', err);
     }
   };
 
-  const handleStart = (username: string, testType: TestType) => {
-    const questionsForType = importedQuestions[testType];
+  const handleStart = (username: string) => {
     setState({ 
       stage: 'assessment', 
-      username,
-      testType,
-      customQuestions: questionsForType.length > 0 ? questionsForType : undefined 
+      username, 
+      customQuestions: importedQuestions.length > 0 ? importedQuestions : undefined 
     });
   };
 
@@ -88,8 +71,7 @@ const Index = () => {
     if (state.stage === 'assessment') {
       setState({ 
         stage: 'results', 
-        username: state.username,
-        testType: state.testType,
+        username: state.username, 
         answers,
         customQuestions: state.customQuestions 
       });
@@ -98,6 +80,7 @@ const Index = () => {
 
   const handleRestart = () => {
     setState({ stage: 'landing' });
+    // Don't clear imported questions - they're now saved as default
   };
 
   switch (state.stage) {
@@ -106,10 +89,7 @@ const Index = () => {
         <LandingPage 
           onStart={handleStart} 
           onImportQuestions={handleImportQuestions}
-          importedCounts={{
-            english: importedQuestions.english.length,
-            interview: importedQuestions.interview.length,
-          }}
+          importedCount={importedQuestions.length}
           isLoading={isLoadingQuestions}
         />
       );
