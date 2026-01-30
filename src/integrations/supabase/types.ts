@@ -17,16 +17,19 @@ export type Database = {
       assessment_settings: {
         Row: {
           id: string
+          test_type: string
           updated_at: string
           use_custom_questions: boolean | null
         }
         Insert: {
           id?: string
+          test_type?: string
           updated_at?: string
           use_custom_questions?: boolean | null
         }
         Update: {
           id?: string
+          test_type?: string
           updated_at?: string
           use_custom_questions?: boolean | null
         }
@@ -42,6 +45,7 @@ export type Database = {
           is_active: boolean | null
           options: Json
           question: string
+          test_type: string
         }
         Insert: {
           correct_answer: number
@@ -52,6 +56,7 @@ export type Database = {
           is_active?: boolean | null
           options: Json
           question: string
+          test_type?: string
         }
         Update: {
           correct_answer?: number
@@ -62,6 +67,7 @@ export type Database = {
           is_active?: boolean | null
           options?: Json
           question?: string
+          test_type?: string
         }
         Relationships: []
       }

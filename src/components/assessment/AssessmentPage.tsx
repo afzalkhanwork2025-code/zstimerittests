@@ -1,13 +1,14 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { ProgressBar } from "./ProgressBar";
 import { QuestionCard } from "./QuestionCard";
-import { generateQuestionsForUser, getQuestionsForLevel } from "@/lib/questionGenerator";
+import { generateQuestionsForUser, getQuestionsForLevel, shuffleQuestionsByUserNumber } from "@/lib/questionGenerator";
 import type { Question } from "@/lib/questionGenerator";
 import { ArrowRight, BookOpen } from "lucide-react";
 
 interface AssessmentPageProps {
   username: string;
+  userNumber: number;
   onComplete: (answers: Record<string, number>) => void;
   customQuestions?: Question[];
 }
@@ -30,17 +31,18 @@ const levelDescriptions: Record<string, string> = {
   'upper-advanced': 'Nuanced grammar, rare constructions, and academic English'
 };
 
-export function AssessmentPage({ username, onComplete, customQuestions }: AssessmentPageProps) {
+export function AssessmentPage({ username, userNumber, onComplete, customQuestions }: AssessmentPageProps) {
   const [currentLevel, setCurrentLevel] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [showLevelIntro, setShowLevelIntro] = useState(!customQuestions);
 
   // Use custom questions if provided, otherwise generate default questions
-  const allQuestions = useMemo(() => 
-    customQuestions || generateQuestionsForUser(username), 
-    [username, customQuestions]
-  );
+  // Then shuffle based on user number for unique ordering per user
+  const allQuestions = useMemo(() => {
+    const baseQuestions = customQuestions || generateQuestionsForUser(username);
+    return shuffleQuestionsByUserNumber(baseQuestions, userNumber);
+  }, [username, userNumber, customQuestions]);
 
   // For custom questions, show all at once; otherwise use level-based grouping
   const isCustomMode = !!customQuestions;

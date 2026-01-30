@@ -6,7 +6,7 @@ import { ImportQuestionsDialog } from "./ImportQuestionsDialog";
 import type { Question } from "@/lib/questionGenerator";
 
 interface LandingPageProps {
-  onStart: (username: string) => void;
+  onStart: (username: string, userNumber: number) => void;
   onImportQuestions?: (questions: Question[]) => void;
   importedCount?: number;
   isLoading?: boolean;
@@ -14,11 +14,14 @@ interface LandingPageProps {
 
 export function LandingPage({ onStart, onImportQuestions, importedCount = 0, isLoading = false }: LandingPageProps) {
   const [name, setName] = useState("");
+  const [userNumber, setUserNumber] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = name.trim();
+    const parsedNumber = parseInt(userNumber, 10);
+    
     if (trimmedName.length < 2) {
       setError("Please enter a valid name (at least 2 characters)");
       return;
@@ -27,8 +30,16 @@ export function LandingPage({ onStart, onImportQuestions, importedCount = 0, isL
       setError("Name must be less than 50 characters");
       return;
     }
+    if (!userNumber || isNaN(parsedNumber) || parsedNumber < 1) {
+      setError("Please enter a valid user number (1 or higher)");
+      return;
+    }
+    if (parsedNumber > 9999) {
+      setError("User number must be less than 10000");
+      return;
+    }
     setError("");
-    onStart(trimmedName);
+    onStart(trimmedName, parsedNumber);
   };
 
   const features = [
@@ -69,7 +80,7 @@ export function LandingPage({ onStart, onImportQuestions, importedCount = 0, isL
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="name" className="text-sm font-medium text-foreground">
-                  Enter your name to begin
+                  Enter your name
                 </label>
                 <Input
                   id="name"
@@ -84,16 +95,37 @@ export function LandingPage({ onStart, onImportQuestions, importedCount = 0, isL
                   autoComplete="name"
                   maxLength={50}
                 />
-                {error && (
-                  <p className="text-sm text-destructive animate-fade-in">{error}</p>
-                )}
               </div>
+              <div className="space-y-2">
+                <label htmlFor="userNumber" className="text-sm font-medium text-foreground">
+                  Enter your user number
+                </label>
+                <Input
+                  id="userNumber"
+                  type="number"
+                  placeholder="e.g., 1, 2, 3..."
+                  value={userNumber}
+                  onChange={(e) => {
+                    setUserNumber(e.target.value);
+                    if (error) setError("");
+                  }}
+                  className="text-center text-lg"
+                  min={1}
+                  max={9999}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Each number gets a unique question order
+                </p>
+              </div>
+              {error && (
+                <p className="text-sm text-destructive animate-fade-in">{error}</p>
+              )}
               <Button
                 type="submit"
                 variant="hero"
                 size="xl"
                 className="w-full"
-                disabled={!name.trim()}
+                disabled={!name.trim() || !userNumber}
               >
                 Start Assessment
               </Button>
