@@ -1,15 +1,14 @@
 import { useState, useEffect } from "react";
 import { LandingPage } from "@/components/assessment/LandingPage";
 import { AssessmentPage } from "@/components/assessment/AssessmentPage";
-import { ThankYouPage } from "@/components/assessment/ThankYouPage";
+import { ResultsPage } from "@/components/assessment/ResultsPage";
 import { supabase } from "@/integrations/supabase/client";
-import { calculateScore, getProficiencyLabel } from "@/lib/questionGenerator";
 import type { Question } from "@/lib/questionGenerator";
 
 type AppState = 
   | { stage: 'landing' }
   | { stage: 'assessment'; username: string; userNumber: number; customQuestions?: Question[] }
-  | { stage: 'thankyou'; username: string };
+  | { stage: 'results'; username: string; userNumber: number; answers: Record<string, number>; customQuestions?: Question[] };
 
 const Index = () => {
   const [state, setState] = useState<AppState>({ stage: 'landing' });
@@ -69,31 +68,14 @@ const Index = () => {
     });
   };
 
-  const handleComplete = async (answers: Record<string, number>, questions: Question[]) => {
+  const handleComplete = (answers: Record<string, number>) => {
     if (state.stage === 'assessment') {
-      // Calculate scores
-      const { total, levelScores } = calculateScore(questions, answers);
-      const proficiency = getProficiencyLabel(total);
-
-      // Save results to database
-      try {
-        await supabase.from("assessment_results").insert({
-          username: state.username,
-          user_number: state.userNumber,
-          total_score: total,
-          total_questions: questions.length,
-          level_scores: levelScores,
-          answers: answers,
-          proficiency_label: proficiency.label,
-        });
-        console.log("Results saved successfully");
-      } catch (err) {
-        console.error("Failed to save results:", err);
-      }
-
       setState({ 
-        stage: 'thankyou', 
-        username: state.username 
+        stage: 'results', 
+        username: state.username,
+        userNumber: state.userNumber,
+        answers,
+        customQuestions: state.customQuestions 
       });
     }
   };
@@ -122,11 +104,13 @@ const Index = () => {
           customQuestions={state.customQuestions}
         />
       );
-    case 'thankyou':
+    case 'results':
       return (
-        <ThankYouPage 
+        <ResultsPage 
           username={state.username} 
+          answers={state.answers} 
           onRestart={handleRestart}
+          customQuestions={state.customQuestions}
         />
       );
   }

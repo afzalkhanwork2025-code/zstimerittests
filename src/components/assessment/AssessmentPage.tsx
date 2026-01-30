@@ -9,7 +9,7 @@ import { ArrowRight, BookOpen } from "lucide-react";
 interface AssessmentPageProps {
   username: string;
   userNumber: number;
-  onComplete: (answers: Record<string, number>, questions: Question[]) => void;
+  onComplete: (answers: Record<string, number>) => void;
   customQuestions?: Question[];
 }
 
@@ -72,7 +72,7 @@ export function AssessmentPage({ username, userNumber, onComplete, customQuestio
       setShowLevelIntro(true);
     } else {
       // Assessment complete
-      onComplete(answers, allQuestions);
+      onComplete(answers);
     }
   };
 
