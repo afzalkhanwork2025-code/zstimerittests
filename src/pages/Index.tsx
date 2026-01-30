@@ -7,8 +7,8 @@ import type { Question } from "@/lib/questionGenerator";
 
 type AppState = 
   | { stage: 'landing' }
-  | { stage: 'assessment'; username: string; customQuestions?: Question[] }
-  | { stage: 'results'; username: string; answers: Record<string, number>; customQuestions?: Question[] };
+  | { stage: 'assessment'; username: string; userNumber: number; customQuestions?: Question[] }
+  | { stage: 'results'; username: string; userNumber: number; answers: Record<string, number>; customQuestions?: Question[] };
 
 const Index = () => {
   const [state, setState] = useState<AppState>({ stage: 'landing' });
@@ -59,10 +59,11 @@ const Index = () => {
     }
   };
 
-  const handleStart = (username: string) => {
+  const handleStart = (username: string, userNumber: number) => {
     setState({ 
       stage: 'assessment', 
-      username, 
+      username,
+      userNumber,
       customQuestions: importedQuestions.length > 0 ? importedQuestions : undefined 
     });
   };
@@ -71,7 +72,8 @@ const Index = () => {
     if (state.stage === 'assessment') {
       setState({ 
         stage: 'results', 
-        username: state.username, 
+        username: state.username,
+        userNumber: state.userNumber,
         answers,
         customQuestions: state.customQuestions 
       });
@@ -96,7 +98,8 @@ const Index = () => {
     case 'assessment':
       return (
         <AssessmentPage 
-          username={state.username} 
+          username={state.username}
+          userNumber={state.userNumber}
           onComplete={handleComplete}
           customQuestions={state.customQuestions}
         />

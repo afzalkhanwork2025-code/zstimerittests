@@ -13,6 +13,15 @@ function seededRandom(seed: string): () => number {
   };
 }
 
+// Seeded random from number for user-based shuffling
+function seededRandomFromNumber(seed: number): () => number {
+  let state = seed;
+  return function() {
+    state = Math.sin(state * 9999) * 10000;
+    return state - Math.floor(state);
+  };
+}
+
 function shuffleArray<T>(array: T[], random: () => number): T[] {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -20,6 +29,12 @@ function shuffleArray<T>(array: T[], random: () => number): T[] {
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
+}
+
+// Shuffle questions based on user number for unique ordering per user
+export function shuffleQuestionsByUserNumber<T>(questions: T[], userNumber: number): T[] {
+  const random = seededRandomFromNumber(userNumber);
+  return shuffleArray(questions, random);
 }
 
 export interface Question {
