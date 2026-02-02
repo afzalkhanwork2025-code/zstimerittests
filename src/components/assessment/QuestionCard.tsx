@@ -13,7 +13,7 @@ interface QuestionCardProps {
 export function QuestionCard({ question, questionNumber, onAnswer, selectedAnswer }: QuestionCardProps) {
   const [hoveredOption, setHoveredOption] = useState<number | null>(null);
 
-  const optionLabels = ['A', 'B', 'C'];
+  const optionLabels = ['A', 'B', 'C', 'D'];
 
   return (
     <div className="w-full max-w-2xl mx-auto animate-scale-in">
