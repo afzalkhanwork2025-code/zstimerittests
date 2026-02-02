@@ -35,7 +35,7 @@ export function ResultsPage({ username, answers, onRestart, customQuestions }: R
     proficient: 'from-neutral-900 to-black'
   };
 
-  const optionLabels = ['A', 'B', 'C'];
+  const optionLabels = ['A', 'B', 'C', 'D'];
 
   return (
     <div className="min-h-screen gradient-subtle">
